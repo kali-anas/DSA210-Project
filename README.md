@@ -7,6 +7,11 @@
 
 This project aims to analyze the usage patterns, email content, and communication trends within my Gmail account. By examining metadata (not the email content itself for privacy), the project will extract insights into productivity, communication habits, and potential areas for improvement.
 
+**Main Research Question**
+How do email usage patterns and communication behaviors affect productivity and time management, and what actionable insights can be derived to enhance organizational efficiency and personal email management?
+
+
+
 ## Data Source
 
 - **Dataset**: Exported email metadata from Gmail (Google Takeout service).
