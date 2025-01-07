@@ -1,62 +1,59 @@
-# DSA210-Project
+# Netflix Viewing Habits Analysis
 
+## Project Overview
+This project analyzes my Netflix viewing patterns during exam and non-exam periods in 2024. By examining viewing history data, the project extracts insights into my consumption habits during my busy academic periods and identifies potential correlations between viewing patterns and exam schedules.
 
-# Gmail Usage Analysis
+## Main Research Question
+How do exam periods affect Netflix viewing habits, specifically testing the null hypothesis that there is no significant difference in viewing patterns between exam and non-exam weeks?
 
-**Project Overview**
-
-This project aims to analyze the usage patterns, email content, and communication trends within my Gmail account. By examining metadata (not the email content itself for privacy), the project will extract insights into productivity, communication habits, and potential areas for improvement.
-
-**Main Research Question**
-How do email usage patterns and communication behaviors affect productivity and time management, and what actionable insights can be derived to enhance organizational efficiency and personal email management?
-
-
+## Hypothesis
+- **Null Hypothesis (H0)**: There is no significant difference in the number of Netflix shows watched during exam weeks compared to non-exam weeks.
 
 ## Data Source
-
-- **Dataset**: Exported email metadata from Gmail (Google Takeout service).
+- **Dataset**: Netflix viewing history exported from Netflix account
 - **Fields**:
-  - **Timestamps**: Sent/received times of emails.
-  - **Sender/Recipient Metadata**: Email addresses or domains.
-  - **Labels**: Categories like Inbox, Spam, Promotions, etc.
-  - **Subject Line Keywords**: Extracted for topic analysis.
-  - **Thread Lengths**: Number of emails in conversations.
-
-Data privacy is maintained by avoiding analysis of email body content or personal attachments.
-
----
+  - Title: Name of shows/movies watched
+  - Date: Viewing date
+- **Derived Features**:
+  - Show name, season, and episode information
+  - Exam period flags
+  - Time-based features (day of week, weekend status)
+  - Viewing metrics (daily/weekly counts)
 
 ## Objectives
+1. **Viewing Pattern Analysis**: 
+   - Examine daily and weekly viewing patterns
+   - Compare exam vs. non-exam period consumption
+   - Analyze weekend vs. weekday viewing habits
 
-1. **Email Traffic Analysis**: Examine the volume of emails sent/received over time and identify peak communication periods.
-2. **Topic Trends**: Use subject line analysis to uncover common topics or keywords.
-3. **Sender Analysis**: Identify top senders/recipients and analyze the type of communication (e.g., personal vs. professional).
-4. **Time Management Insights**: Determine email response times and patterns to evaluate productivity.
+2. **Time-Based Analysis**:
+   - Identify peak viewing periods
+   - Study day-of-week patterns
+   - Track viewing trends throughout the semester
 
----
+3. **Academic Impact Assessment**:
+   - Evaluate changes in viewing habits during exam periods
+   - Analyze potential correlations between exam schedules and entertainment consumption
 
 ## Methodology
+1. **Data Processing**:
+   - Clean and format Netflix viewing history
+   - Extract show information and temporal features
+   - Flag exam period entries
 
-1. **Data Collection**: Export Gmail metadata via Google Takeout and preprocess it for analysis.
 2. **Exploratory Data Analysis (EDA)**:
-   - Visualize trends in email traffic.
-   - Identify key communication partners and response times.
-3. **Text Analysis**:
-   - Perform keyword extraction on subject lines.
-   - Group emails into clusters based on topics using Natural Language Processing (NLP) techniques.
-4. **Time Series Analysis**: Examine trends in email traffic over days, weeks, and months.
-5. **Visualization**: Create dashboards showing communication trends and productivity insights.
+   - Visualize daily and weekly viewing patterns
+   - Compare exam vs. non-exam period statistics
+   - Analyze day-of-week and weekend patterns
 
----
+3. **Statistical Analysis**:
+   - Perform hypothesis testing
+   - Calculate viewing metrics
+   - Determine statistical significance of patterns
 
 ## Tools and Techniques
-
 - **Data Processing**: Python (Pandas, NumPy)
-- **Visualization**: Matplotlib, Plotly
-- **Text Analysis**: NLP tools like NLTK or spaCy
-- **Data Export**: Google Takeout for email metadata
-
-
-
-
+- **Visualization**: Matplotlib
+- **Statistical Analysis**: SciPy (for hypothesis testing)
+- **Text Processing**: Regular expressions for title parsing
 
