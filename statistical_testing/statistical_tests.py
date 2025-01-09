@@ -190,7 +190,7 @@ def save_results_to_file(mann_whitney_results, chi_square_results, output_dir):
             f.write("Neither test shows significant differences in viewing patterns during exam periods.\n")
 
 def create_visualizations(daily_views, mann_whitney_results, chi_square_results, output_dir):
-    """Create and save visualization plot for Mann-Whitney test."""
+    """Create and save visualization plots for both statistical tests."""
     # 1. Mann-Whitney U Test Visualization - Box Plot
     plt.figure(figsize=(12, 6))
     
@@ -221,6 +221,39 @@ def create_visualizations(daily_views, mann_whitney_results, chi_square_results,
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_dir / "mann_whitney_visualization.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # 2. Chi-square Test Visualization - Bar Plot
+    plt.figure(figsize=(12, 6))
+    
+    # Calculate daily rates
+    exam_rate = chi_square_results['exam_rate']
+    non_exam_rate = chi_square_results['non_exam_rate']
+    
+    # Data for plotting
+    periods = ['Exam Period', 'Non-exam Period']
+    rates = [exam_rate, non_exam_rate]
+    
+    # Create bars
+    plt.bar(periods, rates, color=['skyblue', 'skyblue'])
+    
+    # Customize plot
+    plt.title('Average Daily Views: Exam vs Non-exam Periods\nChi-square Test', pad=20)
+    plt.xlabel('Period Type')
+    plt.ylabel('Average Number of Views per Day')
+    
+    # Add value labels on bars
+    for i, v in enumerate(rates):
+        plt.text(i, v, f'{v:.2f}', ha='center', va='bottom')
+    
+    # Add p-value annotation
+    plt.annotate(f'p-value: {chi_square_results["p_value"]:.4f}',
+                xy=(0.02, 0.95), xycoords='axes fraction',
+                bbox=dict(facecolor='white', alpha=0.8))
+    
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_dir / "chi_square_visualization.png", dpi=300, bbox_inches='tight')
     plt.close()
 
 def main():
