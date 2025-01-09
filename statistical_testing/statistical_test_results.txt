@@ -1,0 +1,26 @@
+Statistical Test Results for Netflix Viewing Patterns
+==================================================
+
+1. Mann-Whitney U Test Results
+------------------------------
+Testing if daily viewing counts differ between exam and non-exam periods
+Statistic: 1134.0000
+P-value: 0.5505
+
+Descriptive Statistics:
+Exam Period - Mean: 1.45, Median: 1.00
+Non-exam Period - Mean: 1.63, Median: 1.00
+
+2. Chi-square Test Results
+------------------------------
+Testing if viewing frequency differs between exam and non-exam periods
+Statistic: 0.3555
+P-value: 0.5510
+
+Viewing Rates (views per day):
+Exam Period: 1.45
+Non-exam Period: 1.63
+
+Conclusion
+------------------------------
+Neither test shows significant differences in viewing patterns during exam periods.

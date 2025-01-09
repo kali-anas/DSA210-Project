@@ -3,34 +3,40 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
-
-# Define exam periods (same as in process_netflix_data.py)
-EXAM_PERIODS = [
-    ('2024-03-25', '2024-03-29'),
-    ('2024-04-15', '2024-04-18'),
-    ('2024-04-23', '2024-04-27'),
-    ('2024-05-05', '2024-05-17'),
-    ('2024-06-01', '2024-06-07'),
-    ('2024-08-01', '2024-08-07'),
-    ('2024-08-20', '2024-08-26'),
-    ('2024-11-01', '2024-11-10'),
-    ('2024-11-15', '2024-11-30'),
-    ('2024-12-07', '2024-12-15'),
-    ('2024-12-29', '2025-01-09')
-]
+from pathlib import Path
+import os
 
 def load_data():
-    """Load the processed data files."""
-    daily_counts = pd.read_csv('../data_processing/daily_viewing_counts.csv')
-    daily_counts['Date'] = pd.to_datetime(daily_counts['Date'])
+    """Load the required data files."""
+    # Get the absolute path to the data_processing directory
+    current_dir = Path(__file__).parent
+    data_dir = current_dir.parent / "data_processing"
     
-    dow_stats = pd.read_csv('../data_processing/day_of_week_stats.csv')
+    # Load daily viewing counts
+    daily_views = pd.read_csv(data_dir / "daily_viewing_counts.csv")
+    daily_views['Date'] = pd.to_datetime(daily_views['Date'])
     
-    return daily_counts, dow_stats
+    # Load exam period stats
+    exam_stats = pd.read_csv(data_dir / "exam_period_stats.csv")
+    
+    return daily_views, exam_stats
 
 def is_exam_period(date):
-    """Check if a date falls within exam periods."""
+    """Check if a given date falls within exam periods."""
+    EXAM_PERIODS = [
+        ('2024-03-25', '2024-03-29'),
+        ('2024-04-15', '2024-04-18'),
+        ('2024-04-23', '2024-04-27'),
+        ('2024-05-05', '2024-05-17'),
+        ('2024-06-01', '2024-06-07'),
+        ('2024-08-01', '2024-08-07'),
+        ('2024-08-20', '2024-08-26'),
+        ('2024-11-01', '2024-11-10'),
+        ('2024-11-15', '2024-11-30'),
+        ('2024-12-07', '2024-12-15'),
+        ('2024-12-29', '2025-01-09')
+    ]
+    
     for start, end in EXAM_PERIODS:
         start_date = pd.to_datetime(start)
         end_date = pd.to_datetime(end)
@@ -38,153 +44,208 @@ def is_exam_period(date):
             return True
     return False
 
-def perform_t_test(daily_counts):
-    """Perform independent t-test on daily viewing counts."""
-    # Add exam period flag
-    daily_counts['is_exam_period'] = daily_counts['Date'].apply(is_exam_period)
+def mann_whitney_test(daily_views):
+    """Perform Mann-Whitney U test on daily viewing counts."""
+    # Add exam period flag to daily views
+    daily_views['is_exam_period'] = daily_views['Date'].apply(is_exam_period)
     
     # Get viewing counts for exam and non-exam periods
-    exam_views = daily_counts[daily_counts['is_exam_period']]['daily_views']
-    non_exam_views = daily_counts[~daily_counts['is_exam_period']]['daily_views']
+    exam_views = daily_views[daily_views['is_exam_period']]['daily_views']
+    non_exam_views = daily_views[~daily_views['is_exam_period']]['daily_views']
     
-    # Perform t-test
-    t_stat, p_value = stats.ttest_ind(exam_views, non_exam_views)
-    
-    # Calculate effect size (Cohen's d)
-    n1, n2 = len(exam_views), len(non_exam_views)
-    var1, var2 = exam_views.var(), non_exam_views.var()
-    pooled_se = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
-    cohens_d = (exam_views.mean() - non_exam_views.mean()) / pooled_se
-    
-    return {
-        'test_type': 'Independent t-test',
-        't_statistic': t_stat,
-        'p_value': p_value,
-        'cohens_d': cohens_d,
-        'exam_mean': exam_views.mean(),
-        'non_exam_mean': non_exam_views.mean(),
-        'exam_std': exam_views.std(),
-        'non_exam_std': non_exam_views.std(),
-        'exam_n': n1,
-        'non_exam_n': n2
-    }
-
-def perform_chi_square_test(dow_stats):
-    """Perform chi-square test on day of week viewing patterns."""
-    # Create contingency table
-    contingency = pd.pivot_table(
-        dow_stats,
-        values='views',
-        index='is_exam_period',
-        columns='day_of_week',
-        fill_value=0
+    # Perform Mann-Whitney U test
+    statistic, p_value = stats.mannwhitneyu(
+        exam_views, 
+        non_exam_views,
+        alternative='two-sided'
     )
     
-    # Perform chi-square test
-    chi2, p_value, dof, expected = stats.chi2_contingency(contingency)
-    
     return {
-        'test_type': 'Chi-square test',
-        'chi2_statistic': chi2,
+        'test_name': "Mann-Whitney U Test",
+        'statistic': statistic,
         'p_value': p_value,
-        'degrees_of_freedom': dof,
-        'contingency_table': contingency
+        'exam_mean': exam_views.mean(),
+        'non_exam_mean': non_exam_views.mean(),
+        'exam_median': exam_views.median(),
+        'non_exam_median': non_exam_views.median()
     }
 
-def create_test_visualizations(daily_counts, t_test_results, chi_square_results):
-    """Create visualizations for statistical tests."""
-    # 1. Box plot of daily views by period
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(data=daily_counts, x='is_exam_period', y='daily_views')
-    plt.title('Distribution of Daily Views: Exam vs Non-exam Periods')
-    plt.xlabel('Exam Period')
-    plt.ylabel('Number of Views per Day')
-    plt.savefig('statistical_test_boxplot.png')
-    plt.close()
+def chi_square_test(exam_stats):
+    """Perform Chi-square test on viewing frequencies."""
+    # Extract values from exam_stats
+    exam_views = exam_stats[exam_stats['is_exam_period']]['total_views'].iloc[0]
+    non_exam_views = exam_stats[~exam_stats['is_exam_period']]['total_views'].iloc[0]
+    exam_days = exam_stats[exam_stats['is_exam_period']]['unique_days'].iloc[0]
+    non_exam_days = exam_stats[~exam_stats['is_exam_period']]['unique_days'].iloc[0]
     
-    # 2. Bar plot of means with error bars
-    plt.figure(figsize=(10, 6))
-    means = [t_test_results['non_exam_mean'], t_test_results['exam_mean']]
-    stds = [t_test_results['non_exam_std'], t_test_results['exam_std']]
-    plt.bar(['Non-exam Period', 'Exam Period'], means, yerr=stds, capsize=5)
-    plt.title('Mean Daily Views with Standard Deviation')
-    plt.ylabel('Mean Number of Views per Day')
-    plt.savefig('mean_comparison_plot.png')
-    plt.close()
+    # Calculate expected frequencies (proportional to number of days)
+    total_views = exam_views + non_exam_views
+    total_days = exam_days + non_exam_days
+    
+    expected_exam = total_views * (exam_days / total_days)
+    expected_non_exam = total_views * (non_exam_days / total_days)
+    
+    # Prepare observed and expected frequencies
+    observed = np.array([exam_views, non_exam_views])
+    expected = np.array([expected_exam, expected_non_exam])
+    
+    # Perform Chi-square test
+    statistic, p_value = stats.chisquare(observed, expected)
+    
+    return {
+        'test_name': "Chi-square Test",
+        'statistic': statistic,
+        'p_value': p_value,
+        'observed': observed,
+        'expected': expected,
+        'exam_rate': exam_views / exam_days,
+        'non_exam_rate': non_exam_views / non_exam_days
+    }
 
-def save_results(t_test_results, chi_square_results):
+def print_results(mann_whitney_results, chi_square_results):
+    """Print the results of both statistical tests."""
+    print("\nStatistical Test Results for Netflix Viewing Patterns")
+    print("=" * 50)
+    
+    # Mann-Whitney U Test Results
+    print("\n1. Mann-Whitney U Test Results")
+    print("-" * 30)
+    print(f"Testing if daily viewing counts differ between exam and non-exam periods")
+    print(f"Statistic: {mann_whitney_results['statistic']:.4f}")
+    print(f"P-value: {mann_whitney_results['p_value']:.4f}")
+    print("\nDescriptive Statistics:")
+    print(f"Exam Period - Mean: {mann_whitney_results['exam_mean']:.2f}, Median: {mann_whitney_results['exam_median']:.2f}")
+    print(f"Non-exam Period - Mean: {mann_whitney_results['non_exam_mean']:.2f}, Median: {mann_whitney_results['non_exam_median']:.2f}")
+    
+    # Chi-square Test Results
+    print("\n2. Chi-square Test Results")
+    print("-" * 30)
+    print(f"Testing if viewing frequency differs between exam and non-exam periods")
+    print(f"Statistic: {chi_square_results['statistic']:.4f}")
+    print(f"P-value: {chi_square_results['p_value']:.4f}")
+    print("\nViewing Rates (views per day):")
+    print(f"Exam Period: {chi_square_results['exam_rate']:.2f}")
+    print(f"Non-exam Period: {chi_square_results['non_exam_rate']:.2f}")
+    
+    # Overall Conclusion
+    print("\nConclusion")
+    print("-" * 30)
+    alpha = 0.05
+    
+    mw_significant = mann_whitney_results['p_value'] < alpha
+    chi_significant = chi_square_results['p_value'] < alpha
+    
+    if mw_significant and chi_significant:
+        print("Both tests show significant differences in viewing patterns during exam periods.")
+    elif mw_significant:
+        print("Daily viewing patterns show significant differences, but overall viewing frequency does not.")
+    elif chi_significant:
+        print("Overall viewing frequency shows significant differences, but daily patterns do not.")
+    else:
+        print("Neither test shows significant differences in viewing patterns during exam periods.")
+
+def save_results_to_file(mann_whitney_results, chi_square_results, output_dir):
     """Save test results to a text file."""
-    with open('test_results.txt', 'w') as f:
-        # T-test results
-        f.write("=== Independent T-Test Results ===\n")
-        f.write(f"Testing if there's a significant difference in daily viewing counts between exam and non-exam periods\n\n")
-        f.write(f"T-statistic: {t_test_results['t_statistic']:.4f}\n")
-        f.write(f"P-value: {t_test_results['p_value']:.4f}\n")
-        f.write(f"Cohen's d: {t_test_results['cohens_d']:.4f}\n\n")
+    output_path = output_dir / "statistical_test_results.txt"
+    
+    with open(output_path, "w") as f:
+        f.write("Statistical Test Results for Netflix Viewing Patterns\n")
+        f.write("=" * 50 + "\n\n")
         
-        f.write("Mean daily views:\n")
-        f.write(f"- Exam periods: {t_test_results['exam_mean']:.2f} (SD: {t_test_results['exam_std']:.2f}, n={t_test_results['exam_n']})\n")
-        f.write(f"- Non-exam periods: {t_test_results['non_exam_mean']:.2f} (SD: {t_test_results['non_exam_std']:.2f}, n={t_test_results['non_exam_n']})\n\n")
+        # Mann-Whitney U Test Results
+        f.write("1. Mann-Whitney U Test Results\n")
+        f.write("-" * 30 + "\n")
+        f.write(f"Testing if daily viewing counts differ between exam and non-exam periods\n")
+        f.write(f"Statistic: {mann_whitney_results['statistic']:.4f}\n")
+        f.write(f"P-value: {mann_whitney_results['p_value']:.4f}\n\n")
+        f.write("Descriptive Statistics:\n")
+        f.write(f"Exam Period - Mean: {mann_whitney_results['exam_mean']:.2f}, Median: {mann_whitney_results['exam_median']:.2f}\n")
+        f.write(f"Non-exam Period - Mean: {mann_whitney_results['non_exam_mean']:.2f}, Median: {mann_whitney_results['non_exam_median']:.2f}\n\n")
         
-        # Chi-square results
-        f.write("=== Chi-square Test Results ===\n")
-        f.write(f"Testing if the distribution of viewing across days of the week differs between exam and non-exam periods\n\n")
-        f.write(f"Chi-square statistic: {chi_square_results['chi2_statistic']:.4f}\n")
-        f.write(f"P-value: {chi_square_results['p_value']:.4f}\n")
-        f.write(f"Degrees of freedom: {chi_square_results['degrees_of_freedom']}\n\n")
+        # Chi-square Test Results
+        f.write("2. Chi-square Test Results\n")
+        f.write("-" * 30 + "\n")
+        f.write(f"Testing if viewing frequency differs between exam and non-exam periods\n")
+        f.write(f"Statistic: {chi_square_results['statistic']:.4f}\n")
+        f.write(f"P-value: {chi_square_results['p_value']:.4f}\n\n")
+        f.write("Viewing Rates (views per day):\n")
+        f.write(f"Exam Period: {chi_square_results['exam_rate']:.2f}\n")
+        f.write(f"Non-exam Period: {chi_square_results['non_exam_rate']:.2f}\n\n")
         
-        # Interpretation
+        # Overall Conclusion
+        f.write("Conclusion\n")
+        f.write("-" * 30 + "\n")
         alpha = 0.05
-        f.write("=== Interpretation ===\n")
         
-        # T-test interpretation
-        f.write("\nT-test (Daily viewing counts):\n")
-        if t_test_results['p_value'] < alpha:
-            f.write("- Reject the null hypothesis\n")
-            f.write("- There is a significant difference in daily viewing counts between exam and non-exam periods\n")
-        else:
-            f.write("- Fail to reject the null hypothesis\n")
-            f.write("- No significant difference in daily viewing counts between exam and non-exam periods\n")
+        mw_significant = mann_whitney_results['p_value'] < alpha
+        chi_significant = chi_square_results['p_value'] < alpha
         
-        # Effect size interpretation
-        d = abs(t_test_results['cohens_d'])
-        if d < 0.2:
-            effect = "negligible"
-        elif d < 0.5:
-            effect = "small"
-        elif d < 0.8:
-            effect = "medium"
+        if mw_significant and chi_significant:
+            f.write("Both tests show significant differences in viewing patterns during exam periods.\n")
+        elif mw_significant:
+            f.write("Daily viewing patterns show significant differences, but overall viewing frequency does not.\n")
+        elif chi_significant:
+            f.write("Overall viewing frequency shows significant differences, but daily patterns do not.\n")
         else:
-            effect = "large"
-        f.write(f"- The effect size is {effect} (Cohen's d = {d:.2f})\n")
-        
-        # Chi-square interpretation
-        f.write("\nChi-square test (Day of week distribution):\n")
-        if chi_square_results['p_value'] < alpha:
-            f.write("- Reject the null hypothesis\n")
-            f.write("- The distribution of viewing across days of the week is significantly different between exam and non-exam periods\n")
-        else:
-            f.write("- Fail to reject the null hypothesis\n")
-            f.write("- No significant difference in the distribution of viewing across days of the week between exam and non-exam periods\n")
+            f.write("Neither test shows significant differences in viewing patterns during exam periods.\n")
+
+def create_visualizations(daily_views, mann_whitney_results, chi_square_results, output_dir):
+    """Create and save visualization plot for Mann-Whitney test."""
+    # 1. Mann-Whitney U Test Visualization - Box Plot
+    plt.figure(figsize=(12, 6))
+    
+    # Create box plot
+    plt.boxplot([
+        daily_views[~daily_views['is_exam_period']]['daily_views'],
+        daily_views[daily_views['is_exam_period']]['daily_views']
+    ], labels=['Non-exam Period', 'Exam Period'])
+    
+    plt.title('Daily Viewing Counts: Exam vs Non-exam Periods\nMann-Whitney U Test', pad=20)
+    plt.xlabel('Period Type')
+    plt.ylabel('Number of Shows Watched per Day')
+    
+    # Add p-value annotation
+    plt.annotate(f'p-value: {mann_whitney_results["p_value"]:.4f}',
+                xy=(0.02, 0.95), xycoords='axes fraction',
+                bbox=dict(facecolor='white', alpha=0.8))
+    
+    # Add means to the plot
+    plt.axhline(y=mann_whitney_results['non_exam_mean'], color='b', linestyle='--', alpha=0.3)
+    plt.axhline(y=mann_whitney_results['exam_mean'], color='r', linestyle='--', alpha=0.3)
+    
+    # Add legend for means
+    plt.plot([], [], color='b', linestyle='--', alpha=0.3, label=f'Non-exam Mean: {mann_whitney_results["non_exam_mean"]:.2f}')
+    plt.plot([], [], color='r', linestyle='--', alpha=0.3, label=f'Exam Mean: {mann_whitney_results["exam_mean"]:.2f}')
+    plt.legend()
+    
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_dir / "mann_whitney_visualization.png", dpi=300, bbox_inches='tight')
+    plt.close()
 
 def main():
-    """Main function to run all statistical tests."""
-    print("Loading data...")
-    daily_counts, dow_stats = load_data()
+    """Main function to run the statistical tests."""
+    # Load data
+    daily_views, exam_stats = load_data()
     
-    print("Performing t-test...")
-    t_test_results = perform_t_test(daily_counts)
+    # Get output directory
+    output_dir = Path(__file__).parent
     
-    print("Performing chi-square test...")
-    chi_square_results = perform_chi_square_test(dow_stats)
+    # Perform tests
+    mann_whitney_results = mann_whitney_test(daily_views)
+    chi_square_results = chi_square_test(exam_stats)
     
-    print("Creating visualizations...")
-    create_test_visualizations(daily_counts, t_test_results, chi_square_results)
+    # Print results
+    print_results(mann_whitney_results, chi_square_results)
     
-    print("Saving results...")
-    save_results(t_test_results, chi_square_results)
+    # Save results to file
+    save_results_to_file(mann_whitney_results, chi_square_results, output_dir)
     
-    print("Statistical testing completed!")
+    # Create and save visualization
+    create_visualizations(daily_views, mann_whitney_results, chi_square_results, output_dir)
+    
+    print("\nResults have been saved to 'statistical_test_results.txt'")
+    print("Visualization has been saved as 'mann_whitney_visualization.png'")
 
 if __name__ == "__main__":
     main() 
