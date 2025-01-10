@@ -93,7 +93,6 @@ This section provides detailed insights into the statistical analysis performed 
   - Daily viewing counts were grouped into exam and non-exam periods.
   - The Mann-Whitney U test, a non-parametric test suitable for non-normally distributed data, was applied to compare the two groups.
 - **Results:**
-  - **Test Statistic:** 1134.0000
   - **P-value:** 0.5505
   - **Descriptive Statistics:**
     - Exam Period: **Mean = 1.45**, **Median = 1.00**
@@ -108,7 +107,6 @@ This section provides detailed insights into the statistical analysis performed 
   - Total viewing counts were compared between exam and non-exam periods, normalized by the number of days in each period.
   - The Chi-square test assessed whether observed viewing counts significantly deviated from expected counts based on the duration of each period.
 - **Results:**
-  - **Test Statistic:** 0.3555
   - **P-value:** 0.5510
   - **Viewing Rates:**
     - Exam Period: **1.45 views/day**
